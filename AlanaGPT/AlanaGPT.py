@@ -1,10 +1,8 @@
-from sqlite3 import converters
-from urllib import request
 from yandex_cloud_ml_sdk import YCloudML #Импорт API Яндекса 
 
 import telebot
 from telebot import types
-import pathlib
+
 import requests
 
 
