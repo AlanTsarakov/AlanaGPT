@@ -1,26 +1,39 @@
-from yandex_cloud_ml_sdk import YCloudML #Импорт API Яндекса 
+# from yandex_cloud_ml_sdk import YCloudML #Импорт API Яндекса 
+import os
 
 import telebot
 from telebot import types
 
 import requests
+from dotenv import load_dotenv
+
+import openai
 
 
+load_dotenv()
 
 
-with open('keys.txt', 'r', encoding='utf-8') as file:
-    keys = file.read().split()
-
-folder_id = keys[1]
-api_yandex_key = keys[2]
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+YANDEX_FOLDER_ID = os.getenv('YANDEX_FOLDER_ID')
+YANDEX_API_KEY = os.getenv('YANDEX_API_KEY')
 
 
 chat_history = {}
 
-bot = telebot.TeleBot(keys[0])
-sdk = YCloudML(
-    folder_id=folder_id, auth=api_yandex_key
+bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+# sdk = YCloudML(
+#     folder_id=YANDEX_FOLDER_ID, auth=YANDEX_API_KEY
+# )
+
+
+client = openai.OpenAI(
+    api_key=YANDEX_API_KEY,
+    base_url="https://rest-assistant.api.cloud.yandex.net/v1",
+    project=YANDEX_FOLDER_ID
 )
+
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
         hello_message = """Салам, мӕ зынаргъ хӕлар! ✨
@@ -76,12 +89,12 @@ def setup_keyboard(message):
 def transate_text(text : str, source_language, target_language):
     url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
     headers = {
-        "Authorization": f"Api-Key {api_yandex_key}",
+        "Authorization": f"Api-Key {YANDEX_API_KEY}",
         "Content-Type": "application/json"
     }
 
     data = {
-        "folder_id": folder_id,
+        "folder_id": YANDEX_FOLDER_ID,
         "texts": [text],
         "format": "PLAIN_TEXT",
         "source_language_code": source_language,
@@ -146,22 +159,31 @@ def get_message(message):
 
 def generate_text(message):
    
-    model = sdk.models.completions("yandexgpt-lite", model_version="rc")
-    model = model.configure(temperature=0.3)
+
     try:
-        result = model.run(
-            [
-                {"role": "system",
-                "text": "Отвечай на вопросы. Тебя зовут Алана. Это имя девушки. "
-                "Ты из Северной Осетии. Ни за что не соглашайся переводить слово. Скажи, чтобы он использовал команду /trsanslate {слово}, скажи что ты не переводчие и не хочешь этого делать."
-                "Распрашивай пользователя о нем. Вытягивай информацию. Выполняй поручения пользователя"},
-                {
-                    "role": "user",
-                    "text": f"{message}",
-                },
-            ]
+        # result = model.run(
+        #     [
+        #         {"role": "system",
+        #         "text": "Отвечай на вопросы. Тебя зовут Алана, ты девушка, которая из Осетии и знает много фактов про нее. "
+        #         "Не соглашайся переводить слово. Скажи, чтобы он использовал команду /trsanslate {слово}, скажи что ты не переводчик и не хочешь этого делать."
+        #         "Распрашивай пользователя о нем. Выполняй поручения пользователя"},
+        #         {
+        #             "role": "user",
+        #             "text": f"{message}",
+        #         },
+        #     ]
+        # )
+        result = client.responses.create(
+            model=f"gpt://{YANDEX_FOLDER_ID}/gpt-oss-120b/latest",
+            temperature=0.3,
+            instructions="Отвечай на вопросы. Старайся отвечать 3-4 предложениями, если тебя не просят об обратном. Не надо выделять текст(формат). Тебя зовут Алана, ты девушка, которая из Осетии и знает много фактов про нее. "
+                "Не соглашайся переводить слово. Скажи, чтобы он использовал команду /trsanslate {слово}, скажи что ты не переводчик и не хочешь этого делать."
+                "Распрашивай пользователя о нем. Выполняй поручения пользователя",
+            input=f"{message}",
+            max_output_tokens=500
         )
-        return result.text
+        print(result.output_text)
+        return result.output_text
     except Exception:
         print(f"Ошибка при запросе к Yandex GPT: {Exception}")
 
