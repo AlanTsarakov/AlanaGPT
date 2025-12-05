@@ -1,6 +1,6 @@
 # from yandex_cloud_ml_sdk import YCloudML #Импорт API Яндекса 
 import os
-
+import time
 import telebot
 from telebot import types
 
@@ -207,9 +207,13 @@ def generate_text(message):
 
 
 if __name__ == "__main__":
-    bot.polling(
-    none_stop=True,
-    timeout=60,  # Увеличиваем таймаут до 60 секунд
-    long_polling_timeout=30
-)
+    while True:
+        try:
+            bot.polling(
+            none_stop=True,
+            timeout=60,  # Увеличиваем таймаут до 60 секунд
+            long_polling_timeout=30)
+        except Exception as e:
+            print(f"⚠️ Ошибка: {e}. Ждём, пока Telegram починят. Перезапуск через 60 сек...")
+            time.sleep(100)
 
