@@ -2,8 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Копируем requirements.txt в текущую рабочую директорию (/app)
-COPY requirements.txt .
+# Копируем requirements.txt из папки `AlanaGPT` в текущую рабочую директорию (/app)
+COPY AlanaGPT/requirements.txt .
 
 # Устанавливаем зависимости
 RUN pip install --no-cache-dir -r requirements.txt
